@@ -1,28 +1,34 @@
 #!/bin/bash
 
-# Usage: ./snapshot-to-dataset.sh dataset new-dataset
+# Usage:
+#   ./snapshot-to-dataset.sh new-dataset-name full-snapshot-path [incremental-snapshot-path]
+#
+# Example:
+#   ./snapshot-to-dataset.sh \
+#     documents-recovered \
+#     /mnt/pool1/secure-backups/full-snapshots/documents@manual-2022-07-02_22-18 \
+#     /mnt/pool1/secure-backups/incremental-snapshots/documents@auto-2022-07-05_00-00
 
-set -eux
+
+set -ex
 
 . settings.sh
 
-TARGET_DATASET="$1"
-NEW_DATASET="$2"
+NEW_DATASET_NAME="$1"
+readonly NEW_DATASET_NAME
 
-BASE_SNAPSHOT_PATH="$(ls -tr "${FULL_SNAPSHOTS_DIR}/${TARGET_DATASET}"* | tail -1)"
-readonly BASE_SNAPSHOT_PATH
+FULL_SNAPSHOT_PATH="$2"
+readonly FULL_SNAPSHOT_PATH
 
-# TODO: Refacotr into lib.sh
+INCREMENTAL_SNAPSHOT_PATH="$3"
+readonly INCREMENTAL_SNAPSHOT_PATH
 
-LATEST_SNAPSHOT="$(zfs list -t snapshot -o name -s creation -r ${POOL}/${TARGET_DATASET} | tail -1)"
-readonly LATEST_SNAPSHOT
-LATEST_INCREMENTAL_SNAPSHOT_FILENAME="$(echo "${LATEST_SNAPSHOT}" | sed "s|${POOL}/||g")"
-readonly LATEST_INCREMENTAL_SNAPSHOT_FILENAME
-LATEST_INCREMENTAL_SNAPSHOT_PATH="${INCREMENTAL_SNAPSHOTS_DIR}/${LATEST_INCREMENTAL_SNAPSHOT_FILENAME}"
-readonly LATEST_INCREMENTAL_SNAPSHOT_PATH
+set -u
 
 # Restore from base snapshot
-zfs receive "${POOL}/${NEW_DATASET}" < "${BASE_SNAPSHOT_PATH}"
+zfs receive "${POOL}/${NEW_DATASET_NAME}" < "${FULL_SNAPSHOT_PATH}"
 
-# Update dataset to latest incremental snapshot
-zfs receive "${POOL}/${NEW_DATASET}" < "${LATEST_INCREMENTAL_SNAPSHOT_PATH}"
+if [[ -z "${INCREMENTAL_SNAPSHOT_PATH}" ]]; then
+  # Update dataset to latest incremental snapshot
+  zfs receive "${POOL}/${NEW_DATASET_NAME}" < "${INCREMENTAL_SNAPSHOT_PATH}"
+fi
