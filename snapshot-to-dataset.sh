@@ -12,7 +12,7 @@
 
 set -ex
 
-. settings.sh
+source settings.sh
 
 NEW_DATASET_NAME="$1"
 readonly NEW_DATASET_NAME

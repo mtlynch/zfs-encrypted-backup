@@ -1,3 +1,5 @@
+#!/bin/bash
+
 readonly POOL="mypool"
 readonly BASE_DIR="/mnt/${POOL}/encrypted-backups"
 readonly FULL_SNAPSHOTS_DIR="${BASE_DIR}/full-snapshots"
