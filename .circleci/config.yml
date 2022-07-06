@@ -9,6 +9,9 @@ jobs:
           command: apk add bash git openssh-client
       - checkout
       - run:
+          name: Create settings file from example
+          command: mv settings.example.sh settings.sh
+      - run:
           name: Run static analysis on bash scripts
           command: shellcheck *.sh
 workflows:
