@@ -1,0 +1,17 @@
+version: 2.1
+jobs:
+  check_bash:
+    docker:
+      - image: koalaman/shellcheck-alpine:v0.8.0
+    steps:
+      - run:
+          name: Install dependencies
+          command: apk add bash git openssh-client
+      - checkout
+      - run:
+          name: Run static analysis on bash scripts
+          command: shellcheck *.sh
+workflows:
+  test:
+    jobs:
+      - check_bash

@@ -1,5 +1,10 @@
 # zfs-encrypted-backup
 
+[![CircleCI](https://circleci.com/gh/mtlynch/zfs-encrypted-backup.svg?style=svg)](https://circleci.com/gh/mtlynch/zfs-encrypted-backup)
+[![License](https://img.shields.io/badge/license-Unlicense-blue)](LICENSE)
+
+## Overview
+
 Example scripts to demonstrate how to back up encrypted ZFS backups to an unencrypted dataset.
 
 ## Setup
