@@ -1,5 +1,7 @@
 #!/bin/bash
-
+#
+# Recover a dataset from an encrypted snapshot.
+#
 # Usage:
 #   ./snapshot-to-dataset.sh new-dataset-name full-snapshot-path [incremental-snapshot-path]
 #
