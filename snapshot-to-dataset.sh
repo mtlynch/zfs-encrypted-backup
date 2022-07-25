@@ -14,6 +14,9 @@
 
 set -ex
 
+# Change working directory to script directory.
+cd "$(dirname "${BASH_SOURCE[0]}")"
+
 . settings.sh
 
 NEW_DATASET_NAME="$1"

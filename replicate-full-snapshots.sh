@@ -4,6 +4,9 @@
 
 set -eux
 
+# Change working directory to script directory.
+cd "$(dirname "${BASH_SOURCE[0]}")"
+
 . settings.sh
 
 mkdir -p "${FULL_SNAPSHOTS_DIR}"
