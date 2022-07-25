@@ -33,7 +33,7 @@ set -u
 # Restore from base snapshot
 zfs receive "${POOL}/${NEW_DATASET_NAME}" < "${FULL_SNAPSHOT_PATH}"
 
-if [[ -z "${INCREMENTAL_SNAPSHOT_PATH}" ]]; then
+if [[ -n "${INCREMENTAL_SNAPSHOT_PATH}" ]]; then
   # Update dataset to latest incremental snapshot
   zfs receive "${POOL}/${NEW_DATASET_NAME}" < "${INCREMENTAL_SNAPSHOT_PATH}"
 fi
