@@ -1,5 +1,7 @@
 #!/bin/bash
 
+# Create full snapshots of datasets in DATASETS array.
+
 set -eux
 
 . settings.sh
