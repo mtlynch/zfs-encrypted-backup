@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# Create incremental snapshots of datasets in DATASETS array relative to their
+# last full snapshot.
+
 set -eux
 
 . settings.sh
