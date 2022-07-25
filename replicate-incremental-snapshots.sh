@@ -21,10 +21,12 @@ for DATASET in "${DATASETS[@]}"; do
   INCREMENTAL_SNAPSHOT="${POOL}/${DATASET}@${TIMESTAMP}"
   zfs snapshot "${INCREMENTAL_SNAPSHOT}"
 
+  # Find the most recent full snapshot.
   #  shellcheck disable=SC2012 # ls is better than find in this context
   BASE_SNAPSHOT_FILENAME="$(basename "$(ls -tr "${FULL_SNAPSHOTS_DIR}/${DATASET}"* | tail -1)")"
   BASE_SNAPSHOT="${POOL}/${BASE_SNAPSHOT_FILENAME}"
 
+  # Write the incremental snapshot to a file.
   OUTPUT_FILENAME="${INCREMENTAL_SNAPSHOT//${POOL}\//}"
   OUTPUT_PATH="${INCREMENTAL_SNAPSHOTS_DIR}/${OUTPUT_FILENAME}"
   if [[ -f "${OUTPUT_PATH}" ]]; then
