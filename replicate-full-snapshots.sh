@@ -11,9 +11,18 @@ cd "$(dirname "${BASH_SOURCE[0]}")"
 
 mkdir -p "${FULL_SNAPSHOTS_DIR}"
 
+TIMESTAMP="$(date -Iseconds | sed 's/://g' | sed 's/+0000/Z/g')"
+readonly TIMESTAMP
+
 # shellcheck disable=SC2153 # Not a misspelling
 for DATASET in "${DATASETS[@]}"; do
-  LATEST_SNAPSHOT="$(zfs list -t snapshot -o name -s creation -r "${POOL}"/"${DATASET}" | tail -1)"
-  OUTPUT_FILENAME="${LATEST_SNAPSHOT//${POOL}\//}"
-  zfs send --raw --verbose "${LATEST_SNAPSHOT}" > "${FULL_SNAPSHOTS_DIR}/${OUTPUT_FILENAME}"
+  # Take a snapshot.
+  SNAPSHOT_NAME="${POOL}/${DATASET}@${TIMESTAMP}"
+  zfs snapshot "${SNAPSHOT_NAME}"
+
+  # Write the snapshot to a file.
+  OUTPUT_FILENAME="${SNAPSHOT_NAME//${POOL}\//}"
+  zfs send --raw --verbose "${SNAPSHOT_NAME}" > "${FULL_SNAPSHOTS_DIR}/${OUTPUT_FILENAME}"
 done
+
+echo "Finished replicating full snapshots"
