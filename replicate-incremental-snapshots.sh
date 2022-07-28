@@ -24,6 +24,10 @@ for DATASET in "${DATASETS[@]}"; do
   # Find the most recent full snapshot.
   #  shellcheck disable=SC2012 # ls is better than find in this context
   BASE_SNAPSHOT_FILENAME="$(basename "$(ls -tr "${FULL_SNAPSHOTS_DIR}/${DATASET}"* | tail -1)")"
+  if [[ -z "${BASE_SNAPSHOT_FILENAME}" ]]; then
+    >&2 echo "Couldn't find full snapshot for dataset: ${DATASET}"
+    exit 1
+  fi
   BASE_SNAPSHOT="${POOL}/${BASE_SNAPSHOT_FILENAME}"
 
   # Write the incremental snapshot to a file.
