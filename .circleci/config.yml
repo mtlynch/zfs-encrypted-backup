@@ -13,7 +13,13 @@ jobs:
           command: mv settings.example.sh settings.sh
       - run:
           name: Run static analysis on bash scripts
-          command: shellcheck *.sh
+          command: |
+            while read -r filepath; do
+              # Check shebang for bash.
+              if head -n 1 "${filepath}" | grep --quiet --regexp 'bash'; then
+                  BASH_SCRIPTS+=("${filepath}")
+              fi
+            done < <(git ls-files)
 workflows:
   test:
     jobs:
