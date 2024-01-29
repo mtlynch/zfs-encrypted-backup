@@ -10,7 +10,7 @@ jobs:
       - checkout
       - run:
           name: Create settings file from example
-          command: mv settings.example.sh settings.sh
+          command: mv .env.example .env
       - run:
           name: Run static analysis on bash scripts
           command: ./dev-scripts/check-bash

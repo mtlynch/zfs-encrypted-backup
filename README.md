@@ -9,8 +9,8 @@ Example scripts to demonstrate how to back up encrypted ZFS backups to an unencr
 
 ## Setup
 
-1. Copy `settings.example.sh` to `settings.sh`
-1. Customize the values in `settings.sh` according to your system.
+1. Copy `.env.example` to `.env`
+1. Customize the values in `.env` according to your system.
 
 ## Perform a full backup
 
