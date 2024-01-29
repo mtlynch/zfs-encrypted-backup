@@ -9,7 +9,7 @@ jobs:
           command: apk add bash git openssh-client
       - checkout
       - run:
-          name: Create settings file from example
+          name: Create .env file from example
           command: mv .env.example .env
       - run:
           name: Run static analysis on bash scripts
