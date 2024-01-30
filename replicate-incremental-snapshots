@@ -10,8 +10,8 @@ cd "$(dirname "${BASH_SOURCE[0]}")"
 
 . .env
 
-if [[ -n "${MONITOR_URL}" ]]; then
-  curl "${MONITOR_URL}?state=run"
+if [[ -n "${CRONITOR_INCREMENTAL_JOB_URL}" ]]; then
+  curl "${CRONITOR_INCREMENTAL_JOB_URL}?state=run"
 fi
 
 mkdir -p "${INCREMENTAL_SNAPSHOTS_DIR}"
@@ -47,6 +47,6 @@ done
 
 echo "Finished replicating incremental snapshots"
 
-if [[ -n "${MONITOR_URL}" ]]; then
-  curl "${MONITOR_URL}?state=complete"
+if [[ -n "${CRONITOR_INCREMENTAL_JOB_URL}" ]]; then
+  curl "${CRONITOR_INCREMENTAL_JOB_URL}?state=complete"
 fi

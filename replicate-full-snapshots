@@ -9,8 +9,8 @@ cd "$(dirname "${BASH_SOURCE[0]}")"
 
 . .env
 
-if [[ -n "${MONITOR_URL}" ]]; then
-  curl "${MONITOR_URL}?state=run"
+if [[ -n "${CRONITOR_FULL_JOB_URL}" ]]; then
+  curl "${CRONITOR_FULL_JOB_URL}?state=run"
 fi
 
 mkdir -p "${FULL_SNAPSHOTS_DIR}"
@@ -31,6 +31,6 @@ done
 
 echo "Finished replicating full snapshots"
 
-if [[ -n "${MONITOR_URL}" ]]; then
-  curl "${MONITOR_URL}?state=complete"
+if [[ -n "${CRONITOR_FULL_JOB_URL}" ]]; then
+  curl "${CRONITOR_FULL_JOB_URL}?state=complete"
 fi
