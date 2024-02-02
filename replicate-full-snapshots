@@ -9,6 +9,10 @@ cd "$(dirname "${BASH_SOURCE[0]}")"
 
 . .env
 
+if [[ -n "${CRONITOR_FULL_JOB_URL}" ]]; then
+  curl "${CRONITOR_FULL_JOB_URL}?state=run"
+fi
+
 mkdir -p "${FULL_SNAPSHOTS_DIR}"
 
 TIMESTAMP="$(date -Iseconds | sed 's/://g' | sed 's/+0000/Z/g')"
@@ -26,3 +30,7 @@ for DATASET in "${DATASETS[@]}"; do
 done
 
 echo "Finished replicating full snapshots"
+
+if [[ -n "${CRONITOR_FULL_JOB_URL}" ]]; then
+  curl "${CRONITOR_FULL_JOB_URL}?state=complete"
+fi
