@@ -6,7 +6,7 @@ jobs:
     steps:
       - run:
           name: Install dependencies
-          command: apk add bash git openssh-client
+          command: apk add bash git openssh-client grep
       - checkout
       - run:
           name: Create .env file from example
