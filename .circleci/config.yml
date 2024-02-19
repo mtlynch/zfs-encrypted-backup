@@ -2,8 +2,11 @@ version: 2.1
 jobs:
   check_bash:
     docker:
-      - image: koalaman/shellcheck:v0.9.0
+      - image: koalaman/shellcheck-alpine:v0.9.0
     steps:
+      - run:
+          name: Install dependencies
+          command: apk add bash git openssh-client
       - checkout
       - run:
           name: Create .env file from example
