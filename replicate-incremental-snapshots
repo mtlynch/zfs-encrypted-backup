@@ -8,6 +8,7 @@ set -eux
 # Change working directory to script directory.
 cd "$(dirname "${BASH_SOURCE[0]}")"
 
+# shellcheck disable=SC1091
 . .env
 
 if [[ -n "${CRONITOR_INCREMENTAL_JOB_URL}" ]]; then
