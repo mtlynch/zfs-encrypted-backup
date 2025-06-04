@@ -1,0 +1,126 @@
+#!/usr/bin/env bash
+
+# Delete snapshots and files older than three months for datasets in DATASETS
+# array. Cleans up both full and incremental snapshots and their corresponding
+# files.
+
+set -eux
+
+# Parse command line arguments
+DRY_RUN=false
+if [[ "${1:-}" == "--dry-run" ]]; then
+  DRY_RUN=true
+  echo "DRY RUN MODE: No actual deletions will be performed"
+fi
+
+# Change working directory to script directory.
+cd "$(dirname "${BASH_SOURCE[0]}")"
+
+# shellcheck disable=SC1091
+. .env
+
+# Calculate cutoff date (3 months ago)
+CUTOFF_DATE=$(date -d "3 months ago" +%s)
+readonly CUTOFF_DATE
+
+echo "Cleaning up snapshots and files older than $(date -d "@${CUTOFF_DATE}" \
+  -Iseconds)"
+if [[ "${DRY_RUN}" == "true" ]]; then
+  echo "*** DRY RUN MODE - No actual deletions will be performed ***"
+fi
+
+# Clean up ZFS snapshots
+echo "Cleaning up ZFS snapshots..."
+# shellcheck disable=SC2153 # Not a misspelling
+for DATASET in "${DATASETS[@]}"; do
+  echo "Processing dataset: ${DATASET}"
+
+  # Get all snapshots for this dataset
+  zfs list -H -t snapshot -o name,creation -s creation \
+    "${POOL}/${DATASET}" 2>/dev/null | \
+    while IFS=$'\t' read -r snapshot_name creation_time; do
+    # Convert ZFS creation time to epoch
+    snapshot_epoch=$(date -d "${creation_time}" +%s 2>/dev/null || echo "0")
+
+    if [[ ${snapshot_epoch} -lt ${CUTOFF_DATE} && ${snapshot_epoch} -gt 0 ]]; then
+      if [[ "${DRY_RUN}" == "true" ]]; then
+        echo "[DRY RUN] Would destroy old snapshot: ${snapshot_name} " \
+          "(created: ${creation_time})"
+      else
+        echo "Destroying old snapshot: ${snapshot_name} " \
+          "(created: ${creation_time})"
+        zfs destroy "${snapshot_name}"
+      fi
+    fi
+  done
+done
+
+# Function to clean up snapshot files in a directory
+cleanup_snapshot_files() {
+  local dir="$1"
+  local dir_type="$2"
+
+  if [[ -d "${dir}" ]]; then
+    echo "Cleaning up ${dir_type} snapshot files in ${dir}..."
+
+    find "${dir}" -type f -name "*@*" | while read -r file; do
+      # Extract timestamp from filename
+      filename=$(basename "${file}")
+      timestamp_part="${filename##*@}"
+
+      # Handle different timestamp formats:
+      # Format 1: YYYY-MMDDTHHMMSSZ (from original script)
+      # Format 2: YYYY-MM-DDTHHMMSS-HHMM (with timezone offset)
+      file_epoch=0
+
+      if [[ ${timestamp_part} =~ ^[0-9]{4}-[0-9]{2}[0-9]{2}T[0-9]{6}Z$ ]]; then
+        # Format: YYYY-MMDDTHHMMSSZ
+        formatted_timestamp="${timestamp_part:0:4}-${timestamp_part:4:2}-"
+        formatted_timestamp+="${timestamp_part:6:2}T${timestamp_part:9:2}:"
+        formatted_timestamp+="${timestamp_part:11:2}:${timestamp_part:13:2}Z"
+        file_epoch=$(date -d "${formatted_timestamp}" +%s 2>/dev/null || \
+          echo "0")
+      elif [[ ${timestamp_part} =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{6}[-+][0-9]{4}$ ]]; then
+        # Format: YYYY-MM-DDTHHMMSS-HHMM or YYYY-MM-DDTHHMMSS+HHMM
+        # Insert colons into the time part
+        date_part="${timestamp_part:0:11}"  # YYYY-MM-DDT
+        time_part="${timestamp_part:11:6}"  # HHMMSS
+        tz_part="${timestamp_part:17}"      # -HHMM or +HHMM
+
+        formatted_timestamp="${date_part}${time_part:0:2}:${time_part:2:2}:"
+        formatted_timestamp+="${time_part:4:2}${tz_part}"
+        file_epoch=$(date -d "${formatted_timestamp}" +%s 2>/dev/null || \
+          echo "0")
+      fi
+
+      if [[ ${file_epoch} -gt 0 ]]; then
+        if [[ ${file_epoch} -lt ${CUTOFF_DATE} ]]; then
+          if [[ "${DRY_RUN}" == "true" ]]; then
+            echo "[DRY RUN] Would remove old ${dir_type} snapshot file: " \
+              "${file} (timestamp: ${timestamp_part})"
+          else
+            echo "Removing old ${dir_type} snapshot file: ${file} " \
+              "(timestamp: ${timestamp_part})"
+            rm -f "${file}"
+          fi
+        fi
+      else
+        echo "Warning: Could not parse timestamp from filename: ${filename}"
+      fi
+    done
+  else
+    echo "Directory ${dir} does not exist, skipping ${dir_type} file cleanup"
+  fi
+}
+
+# Clean up full snapshot files
+cleanup_snapshot_files "${FULL_SNAPSHOTS_DIR}" "full"
+
+# Clean up incremental snapshot files
+cleanup_snapshot_files "${INCREMENTAL_SNAPSHOTS_DIR}" "incremental"
+
+if [[ "${DRY_RUN}" == "true" ]]; then
+  echo "*** DRY RUN COMPLETED - No actual deletions were performed ***"
+else
+  echo "Finished cleaning up old snapshots and files"
+fi
