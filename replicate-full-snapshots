@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/env/bin bash
 
 # Create full snapshots of datasets in DATASETS array.
 
