@@ -14,8 +14,6 @@ if [[ -n "${CRONITOR_FULL_JOB_URL}" ]]; then
   curl "${CRONITOR_FULL_JOB_URL}?state=run"
 fi
 
-mkdir -p "${FULL_SNAPSHOTS_DIR}"
-
 TIMESTAMP="$(date -Iseconds | sed 's/://g' | sed 's/+0000/Z/g')"
 readonly TIMESTAMP
 
@@ -27,7 +25,12 @@ for DATASET in "${DATASETS[@]}"; do
 
   # Write the snapshot to a file.
   OUTPUT_FILENAME="${SNAPSHOT_NAME//${POOL}\//}"
-  zfs send --raw --verbose "${SNAPSHOT_NAME}" > "${FULL_SNAPSHOTS_DIR}/${OUTPUT_FILENAME}"
+  OUTPUT_PATH="${FULL_SNAPSHOTS_DIR}/${OUTPUT_FILENAME}"
+
+  # Create parent directory if it doesn't exist (for nested datasets).
+  mkdir -p "$(dirname "${OUTPUT_PATH}")"
+
+  zfs send --raw --verbose "${SNAPSHOT_NAME}" > "${OUTPUT_PATH}"
 done
 
 echo "Finished replicating full snapshots"

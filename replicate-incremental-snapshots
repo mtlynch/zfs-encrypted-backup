@@ -15,8 +15,6 @@ if [[ -n "${CRONITOR_INCREMENTAL_JOB_URL}" ]]; then
   curl "${CRONITOR_INCREMENTAL_JOB_URL}?state=run"
 fi
 
-mkdir -p "${INCREMENTAL_SNAPSHOTS_DIR}"
-
 TIMESTAMP="$(date -Iseconds | sed 's/://g' | sed 's/+0000/Z/g')"
 readonly TIMESTAMP
 
@@ -27,12 +25,13 @@ for DATASET in "${DATASETS[@]}"; do
   zfs snapshot "${INCREMENTAL_SNAPSHOT}"
 
   # Find the most recent full snapshot.
-  #  shellcheck disable=SC2012 # ls is better than find in this context
-  BASE_SNAPSHOT_FILENAME="$(basename "$(ls -tr "${FULL_SNAPSHOTS_DIR}/${DATASET}"* | tail -1)")"
-  if [[ -z "${BASE_SNAPSHOT_FILENAME}" ]]; then
+  # Use find to handle nested datasets (datasets with forward slashes).
+  BASE_SNAPSHOT_FILE="$(find "${FULL_SNAPSHOTS_DIR}" -name "${DATASET}@*" -type f | sort | tail -1)"
+  if [[ -z "${BASE_SNAPSHOT_FILE}" ]]; then
     >&2 echo "Couldn't find full snapshot for dataset: ${DATASET}"
     exit 1
   fi
+  BASE_SNAPSHOT_FILENAME="$(basename "${BASE_SNAPSHOT_FILE}")"
   BASE_SNAPSHOT="${POOL}/${BASE_SNAPSHOT_FILENAME}"
 
   # Write the incremental snapshot to a file.
@@ -42,6 +41,10 @@ for DATASET in "${DATASETS[@]}"; do
     echo "${OUTPUT_PATH} already exists, skipping..."
     continue
   fi
+
+  # Create parent directory if it doesn't exist (for nested datasets).
+  mkdir -p "$(dirname "${OUTPUT_PATH}")"
+
   zfs send --raw --verbose -i "${BASE_SNAPSHOT}" "${INCREMENTAL_SNAPSHOT}" \
     > "${OUTPUT_PATH}"
 done
