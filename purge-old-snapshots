@@ -124,14 +124,13 @@ purge_snapshot_archives() {
 
     if (( ${remaining_counts["${dataset}"]} > keep_count )); then
       if [[ ${DRY_RUN} == true ]]; then
-        printf '[DRY RUN] Would remove %s snapshot archive: %s\n' \
-          "${snapshot_type}" "${file}"
+        printf '%s: REMOVE [DRY RUN]\n' "${file}"
       else
-        printf 'Removing %s snapshot archive: %s\n' "${snapshot_type}" "${file}"
+        printf '%s: REMOVE\n' "${file}"
         rm -- "${file}"
       fi
     else
-      printf 'Keeping %s snapshot archive: %s\n' "${snapshot_type}" "${file}"
+      printf '%s: KEEP\n' "${file}"
     fi
     remaining_counts["${dataset}"]=$(( ${remaining_counts["${dataset}"]} - 1 ))
   done
