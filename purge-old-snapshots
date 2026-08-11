@@ -80,7 +80,8 @@ purge_snapshot_archives() {
   local record
   local relative_path
   local timestamp
-  local -A retained_counts=()
+  local -a archive_records=()
+  local -A remaining_counts=()
 
   if [[ ! -d ${directory} ]]; then
     printf 'Directory %s does not exist, skipping %s snapshots\n' \
@@ -91,27 +92,12 @@ purge_snapshot_archives() {
   printf 'Purging %s snapshots in %s, keeping %s per dataset\n' \
     "${snapshot_type}" "${directory}" "${keep_count}"
 
-  # ISO-formatted timestamps sort chronologically, so process newest archives
-  # first within each dataset while maintaining separate retention counters.
+  # ISO-formatted timestamps sort chronologically, so collect each dataset's
+  # oldest-to-newest records before deciding which oldest archives to remove.
   while IFS= read -r -d '' record; do
     dataset="${record%%$'\t'*}"
-    record="${record#*$'\t'}"
-    timestamp="${record%%$'\t'*}"
-    file="${record#*$'\t'}"
-
-    if (( ${retained_counts["${dataset}"]:-0} < keep_count )); then
-      retained_counts["${dataset}"]=$(( ${retained_counts["${dataset}"]:-0} + 1 ))
-      printf 'Keeping %s snapshot archive: %s\n' "${snapshot_type}" "${file}"
-      continue
-    fi
-
-    if [[ ${DRY_RUN} == true ]]; then
-      printf '[DRY RUN] Would remove %s snapshot archive: %s\n' \
-        "${snapshot_type}" "${file}"
-    else
-      printf 'Removing %s snapshot archive: %s\n' "${snapshot_type}" "${file}"
-      rm -- "${file}"
-    fi
+    archive_records+=("${record}")
+    remaining_counts["${dataset}"]=$(( ${remaining_counts["${dataset}"]:-0} + 1 ))
   done < <(
     {
       while IFS= read -r -d '' file; do
@@ -127,8 +113,28 @@ purge_snapshot_archives() {
             "${snapshot_type}" "${file}"
         fi
       done < <(find "${directory}" -type f -name '*@*' -print0)
-    } | sort --field-separator=$'\t' --key=1,1 --key=2,2r --zero-terminated
+    } | sort --field-separator=$'\t' --key=1,1 --key=2,2 --zero-terminated
   )
+
+  for record in "${archive_records[@]}"; do
+    dataset="${record%%$'\t'*}"
+    record="${record#*$'\t'}"
+    timestamp="${record%%$'\t'*}"
+    file="${record#*$'\t'}"
+
+    if (( ${remaining_counts["${dataset}"]} > keep_count )); then
+      if [[ ${DRY_RUN} == true ]]; then
+        printf '[DRY RUN] Would remove %s snapshot archive: %s\n' \
+          "${snapshot_type}" "${file}"
+      else
+        printf 'Removing %s snapshot archive: %s\n' "${snapshot_type}" "${file}"
+        rm -- "${file}"
+      fi
+    else
+      printf 'Keeping %s snapshot archive: %s\n' "${snapshot_type}" "${file}"
+    fi
+    remaining_counts["${dataset}"]=$(( ${remaining_counts["${dataset}"]} - 1 ))
+  done
 }
 
 if [[ -n ${KEEP_LAST_FULL} ]]; then
