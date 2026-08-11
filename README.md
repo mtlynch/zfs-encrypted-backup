@@ -32,6 +32,19 @@ To perform incremental backups relative to your latest full backups (above), run
 
 You'll likely want to run this as a cron job daily or weekly.
 
+## Purge old backup archives
+
+To retain a fixed number of the newest archive files for each dataset, run:
+
+```bash
+./purge-old-snapshots --keep-last-incremental 7 --keep-last-full 5
+```
+
+This removes only archive files, not ZFS snapshots. Retention is calculated
+separately for each dataset and snapshot type. Add `--dry-run` to preview the
+files that would be removed. Omit either retention option to leave that
+snapshot type untouched.
+
 ## Restore from backup
 
 To recover from an encrypted dataset backup, run the following script:
