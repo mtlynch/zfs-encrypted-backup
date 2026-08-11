@@ -92,12 +92,12 @@ purge_snapshot_archives() {
     "${snapshot_type}" "${directory}" "${keep_count}"
 
   # ISO-formatted timestamps sort chronologically, so process newest archives
-  # first while maintaining a separate retention counter for each dataset.
+  # first within each dataset while maintaining separate retention counters.
   while IFS= read -r -d '' record; do
+    dataset="${record%%$'\t'*}"
+    record="${record#*$'\t'}"
     timestamp="${record%%$'\t'*}"
     file="${record#*$'\t'}"
-    relative_path="${file#"${directory}"/}"
-    dataset="${relative_path%@*}"
 
     if (( ${retained_counts["${dataset}"]:-0} < keep_count )); then
       retained_counts["${dataset}"]=$(( ${retained_counts["${dataset}"]:-0} + 1 ))
@@ -117,15 +117,17 @@ purge_snapshot_archives() {
       while IFS= read -r -d '' file; do
         filename="${file##*/}"
         timestamp="${filename##*@}"
+        relative_path="${file#"${directory}"/}"
+        dataset="${relative_path%@*}"
 
         if [[ ${timestamp} =~ ^[0-9]{4}-([0-9]{2}[0-9]{2}|[0-9]{2}-[0-9]{2})T[0-9]{6}(Z|[-+][0-9]{4})$ ]]; then
-          printf '%s\t%s\0' "${timestamp}" "${file}"
+          printf '%s\t%s\t%s\0' "${dataset}" "${timestamp}" "${file}"
         else
           >&2 printf 'Skipping %s snapshot archive with unrecognized timestamp: %s\n' \
             "${snapshot_type}" "${file}"
         fi
       done < <(find "${directory}" -type f -name '*@*' -print0)
-    } | sort --zero-terminated --reverse
+    } | sort --field-separator=$'\t' --key=1,1 --key=2,2r --zero-terminated
   )
 }
 
