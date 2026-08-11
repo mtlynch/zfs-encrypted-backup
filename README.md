@@ -42,7 +42,8 @@ To retain a fixed number of the newest archive files for each dataset, run:
 
 This removes only archive files, not ZFS snapshots. Retention is calculated
 separately for each dataset and snapshot type. Add `--dry-run` to preview the
-files that would be removed.
+files that would be removed. Omit either retention option to leave that
+snapshot type untouched.
 
 ## Restore from backup
 

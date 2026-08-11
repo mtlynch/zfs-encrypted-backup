@@ -6,9 +6,10 @@ set -euo pipefail
 
 usage() {
   cat <<'EOF'
-Usage: purge-old-snapshots --keep-last-incremental COUNT --keep-last-full COUNT [--dry-run]
+Usage: purge-old-snapshots [--keep-last-incremental COUNT] [--keep-last-full COUNT] [--dry-run]
 
-Retains the newest COUNT archive files of each snapshot type for every dataset.
+Retains the newest COUNT archive files for each selected snapshot type and
+dataset. Omit a snapshot type to leave its archive files untouched.
 Snapshot archive filenames must end in a timestamp produced by the replication
 scripts, such as dataset@2026-08-11T040001-0400.
 EOF
@@ -54,8 +55,9 @@ while (( $# > 0 )); do
   esac
 done
 
-if [[ ! ${KEEP_LAST_INCREMENTAL} =~ ^[0-9]+$ ]] || \
-  [[ ! ${KEEP_LAST_FULL} =~ ^[0-9]+$ ]]; then
+if [[ -n ${KEEP_LAST_INCREMENTAL} && \
+  ! ${KEEP_LAST_INCREMENTAL} =~ ^[0-9]+$ ]] || \
+  [[ -n ${KEEP_LAST_FULL} && ! ${KEEP_LAST_FULL} =~ ^[0-9]+$ ]]; then
   >&2 printf '%s\n' \
     '--keep-last-incremental and --keep-last-full require non-negative integers'
   usage >&2
@@ -127,6 +129,11 @@ purge_snapshot_archives() {
   )
 }
 
-purge_snapshot_archives "${FULL_SNAPSHOTS_DIR}" full "${KEEP_LAST_FULL}"
-purge_snapshot_archives "${INCREMENTAL_SNAPSHOTS_DIR}" incremental \
-  "${KEEP_LAST_INCREMENTAL}"
+if [[ -n ${KEEP_LAST_FULL} ]]; then
+  purge_snapshot_archives "${FULL_SNAPSHOTS_DIR}" full "${KEEP_LAST_FULL}"
+fi
+
+if [[ -n ${KEEP_LAST_INCREMENTAL} ]]; then
+  purge_snapshot_archives "${INCREMENTAL_SNAPSHOTS_DIR}" incremental \
+    "${KEEP_LAST_INCREMENTAL}"
+fi
